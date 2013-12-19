@@ -1,4 +1,5 @@
-(ns nonaga.core)
+(ns nonaga.core
+  (:require [clojure.set :as s]))
 
 (def initial-game
   {:rings
@@ -29,8 +30,11 @@
 (defn sw [[x y]] [(if (odd?  y) x (- x 1)) (- y 1)])
 (defn se [[x y]] [(if (even? y) x (+ x 1)) (- y 1)])
 
+(defn ordered-neighbours [cell]
+  ((juxt nw ne e se sw w) cell))
+
 (defn neighbours [cell]
-  (into #{} ((juxt nw ne e se sw w) cell)))
+  (into #{} (ordered-neighbours cell)))
 
 (defn invalid-space? [{:keys [rings whites blacks]} coord]
   (not (and (rings coord)
@@ -43,3 +47,14 @@
           :when (invalid-space? board (direction step))]
       step)))
 
+(defn neighbouring-pairs [cell]
+  (->> (ordered-neighbours cell)
+       cycle
+       (partition 2 1)
+       (map set)
+       (take 6)))
+
+(defn can-move-ring? [{:keys [rings whites blacks]} cell]
+  (let [n (neighbours cell)]
+    (some #(empty? (s/intersection % n rings))
+          (neighbouring-pairs cell))))
